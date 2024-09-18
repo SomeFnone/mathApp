@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>数学测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        .question {
+            margin-top: 20px;
+        }
+        .options {
+            margin-top: 5px;
+        }
+        label {
+            margin-left: 5px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>数学选择题测试</h2>
+    <form th:action="@{/quiz}" method="post">
+        <div class="question">
+            <p>题目：<span th:text="${question.content}"></span></p>
+        </div>
+        <div class="options">
+            <input type="radio" id="option1" name="selectedOption" value="A">
+            <label for="option1" th:text="${question.optionA}"></label><br>
+
+            <input type="radio" id="option2" name="selectedOption" value="B">
+            <label for="option2" th:text="${question.optionB}"></label><br>
+
+            <input type="radio" id="option3" name="selectedOption" value="C">
+            <label for="option3" th:text="${question.optionC}"></label><br>
+
+            <input type="radio" id="option4" name="selectedOption" value="D">
+            <label for="option4" th:text="${question.optionD}"></label><br>
+        </div>
+        <br>
+
+        <button type="submit">提交答案</button>
+    </form>
+</div>
+</body>
+</html>
