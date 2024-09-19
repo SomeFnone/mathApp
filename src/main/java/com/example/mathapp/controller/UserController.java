@@ -57,7 +57,7 @@ public class UserController {
      * @param password 用户的密码
      * @return 登录成功后重定向到试卷生成页面，否则返回登录页面
      */
-    @PostMapping("/my-login")
+    @PostMapping("/login")
     public String loginUser(@RequestParam String username, @RequestParam String password) {
         logger.debug("Attempting to login with email: {}", username); // 日志输出
         if (userService.login(username, password)) {

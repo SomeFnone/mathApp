@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>数学测试</title>
+    <title>选择年级和题目数量</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,31 +15,39 @@
             background: white;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px; /* 圆角边框 */
         }
         h2 {
             text-align: center;
+            color: #333;
         }
         form {
             display: flex;
             flex-direction: column;
         }
-        .question {
-            margin-top: 20px;
-        }
-        .options {
-            margin-top: 5px;
-        }
         label {
-            margin-left: 5px;
+            font-size: 16px;
+            color: #333;
+            margin-top: 10px;
+        }
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px; /* 圆角边框 */
+            box-sizing: border-box; /* 边框包含在宽度内 */
         }
         button {
             background-color: #5cb85c;
             color: white;
             padding: 10px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px; /* 圆角边框 */
             cursor: pointer;
             margin-top: 20px;
+            font-size: 16px;
         }
         button:hover {
             background-color: #4cae4c;
@@ -48,27 +56,18 @@
 </head>
 <body>
 <div class="container">
-    <h2>数学选择题测试</h2>
-    <form th:action="@{/quiz}" method="post">
-        <div class="question">
-            <p>题目：<span th:text="${question.content}"></span></p>
-        </div>
-        <div class="options">
-            <input type="radio" id="option1" name="selectedOption" value="A">
-            <label for="option1" th:text="${question.optionA}"></label><br>
-
-            <input type="radio" id="option2" name="selectedOption" value="B">
-            <label for="option2" th:text="${question.optionB}"></label><br>
-
-            <input type="radio" id="option3" name="selectedOption" value="C">
-            <label for="option3" th:text="${question.optionC}"></label><br>
-
-            <input type="radio" id="option4" name="selectedOption" value="D">
-            <label for="option4" th:text="${question.optionD}"></label><br>
-        </div>
-        <br>
-
-        <button type="submit">提交答案</button>
+    <h2>请选择年级和题目数量</h2>
+    <form th:action="@{/generate-quiz}" method="post">
+        <label for="grade">选择年级:</label>
+        <select id="grade" name="grade" required>
+            <option value="">-- 请选择 --</option>
+            <option th:each="grade : ${grades}" th:text="${grade}" th:value="${grade}"></option>
+        </select>
+        <br><br>
+        <label for="questionCount">生成题目数量:</label>
+        <input type="number" id="questionCount" name="questionCount" min="1" max="50" required>
+        <br><br>
+        <button type="submit">生成试卷</button>
     </form>
 </div>
 </body>

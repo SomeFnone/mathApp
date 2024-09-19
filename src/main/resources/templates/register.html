@@ -10,36 +10,40 @@
             padding: 20px;
         }
         .container {
-            max-width: 400px;
+            max-width: 500px;
             margin: auto;
             background: white;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px; /* 圆角边框 */
         }
         h2 {
             text-align: center;
+            color: #333;
         }
         form {
             display: flex;
             flex-direction: column;
         }
         label {
+            font-size: 16px;
+            color: #333;
             margin-top: 10px;
         }
-        input[type="email"], input[type="password"] {
+        input[type="email"], input[type="password"], button {
+            width: 100%;
             padding: 10px;
             margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #ccc;
+            border-radius: 5px; /* 圆角边框 */
+            box-sizing: border-box; /* 边框包含在宽度内 */
         }
         button {
             background-color: #5cb85c;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
             cursor: pointer;
             margin-top: 20px;
+            font-size: 16px;
         }
         button:hover {
             background-color: #4cae4c;
@@ -55,7 +59,6 @@
 
         <label for="password">密码：</label>
         <input type="password" id="password" name="password" required><br><br>
-
         <button type="submit">注册</button>
     </form>
 </div>
