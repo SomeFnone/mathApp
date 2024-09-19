@@ -49,6 +49,14 @@
 
 未完成。
 
+出题界面的暂定的接口是"/generate-quiz"
+
+详见`QuizController`第36行
+
+```java
+@PostMapping("/generate-quiz")
+```
+
 `ElementaryQuestionGenerator`、`MiddleQuestionGenerator`、`HighQuestionGenerator`的具体功能是空的，需要自行填充
 
 我觉得可以使用个人项目的方法
@@ -56,6 +64,14 @@
 ## 6.分数界面及其功能
 
 未完成。
+
+分数界面的接口暂定为"/submit-answers"
+
+详见`QuizController`第50行
+
+```java
+@PostMapping("/submit-answers")
+```
 
 分数界面的完成依托于出题界面及其功能的实现
 
