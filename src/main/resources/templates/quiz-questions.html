@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>数学测试</title>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        "HTML-CSS": { availableFonts: ["TeX"] }
+        });
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px; /* 圆角边框 */
+        }
+        .question {
+            text-align: center; /* Center align the question section */
+        }
+        .question h2 {
+            color: #333;
+        }
+        .question h3 {
+            color: #333;
+        }
+        .question p {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .question ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .question li {
+            margin: 10px;
+            width: 100%;
+        }
+        .question label {
+            font-size: 16px;
+            color: #333;
+            display: block; /* Make each option a block to take full width */
+        }
+        .question input[type="radio"] {
+            margin-right: 10px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .button-group {
+            text-align: center; /* Center align the button group */
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="question">
+        <h2>数学测试</h2>
+        <form th:action="@{/navigate-question}" method="post">
+            <h3>题目 <span th:text="${currentIndex + 1}"></span> / <span th:text="${totalQuestions}"></span></h3>
+            <p id="question-text" th:utext="${question.questionText}"></p>
+            <ul>
+                <li th:each="option,iterStat : ${question.options}">
+                    <label>
+                        <input type="radio" name="answer" th:value="${option}" th:checked="${userAnswers[currentIndex] == option}"/>
+                        <span th:text="${option}"></span>
+                    </label>
+                </li>
+            </ul>
+            <div class="button-group">
+                <button type="submit" name="action" value="previous" th:disabled="${currentIndex == 0}">上一题</button>
+                <button type="submit" name="action" value="next" th:disabled="${currentIndex == totalQuestions - 1}">下一题</button>
+                <button type="submit" name="action" value="submit" th:if="${currentIndex == totalQuestions - 1}">提交</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<!-- 启用 MathJax 渲染 -->
+<script>
+    window.onload = function() {
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise().then(function() {
+                console.log("MathJax 渲染完成");
+            }).catch(function(err) {
+                console.error("MathJax 渲染失败:", err);
+            });
+        } else {
+            console.error("MathJax 没有加载");
+        }
+    };
+</script>
+
+</body>
+</html>

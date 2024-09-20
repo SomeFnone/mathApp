@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>查看错题</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .question {
+            text-align: center;
+        }
+        .question h2, h3 {
+            color: #333;
+        }
+        .question ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .question li {
+            margin: 10px;
+            width: 100%;
+        }
+        .question label {
+            font-size: 16px;
+            color: #333;
+            display: block;
+        }
+        .correct-answer {
+            color: green;
+        }
+        .wrong-answer {
+            color: red;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="question">
+        <h2>查看错题</h2>
+        <form th:action="@{/navigate-error}" method="post">
+            <h3>题目 <span th:text="${currentIndex + 1}"></span> / <span th:text="${totalErrorQuestions}"></span></h3>
+            <!-- 显示题目文本 -->
+            <p th:utext="${errorQuestions[currentIndex].questionText}"></p>
+
+            <!-- 显示正确答案和用户错误答案 -->
+            <p>正确答案: <span th:text="${correctAnswers[currentIndex]}"></span></p>
+            <p>你的答案: <span th:text="${userWrongAnswers[currentIndex]}"></span></p>
+
+            <div class="button-group">
+                <button type="submit" name="action" value="previous" th:disabled="${currentIndex == 0}">上一题</button>
+                <button type="submit" name="action" value="next" th:disabled="${currentIndex == totalErrorQuestions - 1}">下一题</button>
+                <button type="button" onclick="location.href='/quiz'">继续答题</button>
+                <button type="button" onclick="location.href='/login'">退出</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
