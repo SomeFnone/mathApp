@@ -1,7 +1,6 @@
 HELP.md
 users.txt
 target/
-src/main/resources/templates/try.html
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

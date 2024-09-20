@@ -2,7 +2,7 @@
 
 > 序号对应<结对编程项目需求>的功能序号
 >
-> 24.9.19 16:25 By Roeland
+> 24.9.21 0:15 By Roeland
 
 ## 1.图形化界面
 
@@ -10,13 +10,14 @@
 
 - 登录界面(login.html)
 - 选题界面(quiz.html)
+- 出题界面(quiz-questions.html)
+- 分数界面(score.html)
+- 错题界面(error-questions.html)
 
 未完成：
 
 - 注册界面(register.html)
   - 功能未完善(具体见2)
-- 出题界面
-- 分数界面
 - (可能需要的)登录后选项界面(用于登录后重置密码+进入选题做题的过渡?)
 
 ## 2.注册功能
@@ -47,43 +48,46 @@
 
 ## 5.出题界面及功能
 
-未完成。
-
-出题界面的暂定的接口是"/generate-quiz"
-
-详见`QuizController`第36行
-
-```java
-@PostMapping("/generate-quiz")
-```
-
-`ElementaryQuestionGenerator`、`MiddleQuestionGenerator`、`HighQuestionGenerator`的具体功能是空的，需要自行填充
-
-我觉得可以使用个人项目的方法
+已完成
 
 ## 6.分数界面及其功能
 
-未完成。
-
-分数界面的接口暂定为"/submit-answers"
-
-详见`QuizController`第50行
-
-```java
-@PostMapping("/submit-answers")
-```
-
-分数界面的完成依托于出题界面及其功能的实现
+已完成
 
 ## 7.退出/继续做题
 
-5，6做完，7能做
-
-我觉得7的功能可以集成到分数界面
+已完成
 
 ## 8.其他
 
-**页面权限设置**：
+**页面优化设置**：
+
+这个也可以先不急。或者在生成时让大模型自己先生成一个，后期再统一。
+
+**用户鉴权与信息加密**：
+
+这是我和班上其他同学交流的时候，发现的一个可以做也可以不做的功能。
+
+**Or More ...**
+
+## 8.遇到的问题
+
+### 1.**题目渲染问题**
+
+现在你在浏览器上运行现版本的项目，会发现答题界面上，题目的显示**会非常怪异**，像这样：
+
+![image-20240921000158114](C:\Users\Roeland\AppData\Roaming\Typora\typora-user-images\image-20240921000158114.png)
+
+这不是出题的bug，也不是显示的bug，**是我特意写成这样的！！！**
+
+实际上web上的题目是`LaTeX`格式的数学公式，我希望的是能够通过`mathjax`等第三方库，在web端将数学表达式渲染成这个样子：
+$\tan\left(\sqrt{20} \div 45\right) \div \cos\left(80 \cdot 68\right) \cdot 11$
+
+但是不知道是哪里的错误(库导入没问题，库本身也没问题，这些都检验过了)，在`quiz-questions.html`中怎么改动都没法成功渲染；但是，在`/src/main/resources/templates/try.html`中尝试，也就是一个最简化的前端页面，只有要渲染的公式和导入的`mathjax`库，这样反而能够渲染成功....非常非常非常非常离谱，我前天晚上搞了3小时没搞定，就决定先搁置这个问题了。
+
+如果后期我们没有解决这个问题，也好办，前端页面显示的这个题目文本，是调用了我新写的`ExpressionEvaluator`中的方法`toMarkDown`才变成这样的，本身题目的生成是用的你个人项目的代码，我没有做任何改动，仅做了适配。因此只要把调用函数的部分删掉即可。
+
+### **2.页面权限设置**
 
 因`org.springframework.security`包写死了生成认证用户的过程，而我们采用自定义的登录URL(/login)，所以暂时没法让通过我们自定义注册的用户获得spring的认证权限，因此无法设置页面权限，即：
 
@@ -93,14 +97,9 @@
 ```
 
 如果这个权限问题无法解决，或暂时无法解决，可以将新建的页面放在`permitAll`中，即：
+
 ```java
 .requestMatchers("/login", "/register", "/error", "/quiz", "/xxxxx").permitAll() // 允许未认证用户访问登录、注册和错误等页面
 ```
 
 个人认为，该问题的优先度较低，不是要求中明确需要的，可以在前面的功能都完成后再解决。
-
-**页面优化设置**：
-
-这个也可以先不急。或者在生成时让大模型自己先生成一个，后期再统一。
-
-**Or More ...**
