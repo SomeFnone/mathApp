@@ -76,7 +76,7 @@
 
 现在你在浏览器上运行现版本的项目，会发现答题界面上，题目的显示**会非常怪异**，像这样：
 
-![image-20240921000158114](C:\Users\Roeland\AppData\Roaming\Typora\typora-user-images\image-20240921000158114.png)
+![image-20240921000158114](https://cdn.jsdelivr.net/gh/SomeFnone/blog_pic@main/img/image-20240921000158114.png)
 
 这不是出题的bug，也不是显示的bug，**是我特意写成这样的！！！**
 
