@@ -5,13 +5,25 @@ package com.example.mathapp.model;
  */
 public class User {
 
+    private String username;
     private String email;
     private String password;
 
     // 构造函数
-    public User(String email, String password) {
+    public User(String username, String email, String password) {
+        this.username = username;
         this.email = email;
         this.password = password;
+    }
+
+    // 获取用户名
+    public String getUsername() {
+        return username;
+    }
+
+    // 设置用户名
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     // 获取邮箱

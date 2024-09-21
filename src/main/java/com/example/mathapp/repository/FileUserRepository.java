@@ -28,8 +28,8 @@ public class FileUserRepository {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 2) {
-                    userMap.put(parts[0], new User(parts[0], parts[1]));
+                if (parts.length == 3) {
+                    userMap.put(parts[0], new User(parts[0], parts[1], parts[2])); // username,email,password
                 }
             }
         } catch (IOException e) {
@@ -43,7 +43,7 @@ public class FileUserRepository {
     private void saveUsersToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (User user : userMap.values()) {
-                writer.write(user.getEmail() + "," + user.getPassword());
+                writer.write(user.getUsername() + "," + user.getEmail() + "," + user.getPassword());
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -57,7 +57,7 @@ public class FileUserRepository {
      * @param user 用户对象
      */
     public void save(User user) {
-        userMap.put(user.getEmail(), user);
+        userMap.put(user.getUsername(), user);
         saveUsersToFile();
     }
 
@@ -68,6 +68,16 @@ public class FileUserRepository {
      * @return 用户对象，如果未找到则返回 null
      */
     public User findByEmail(String email) {
-        return userMap.get(email);
+        return userMap.values().stream().filter(user -> user.getEmail().equals(email)).findFirst().orElse(null);
+    }
+
+    /**
+     * 根据用户名查找用户。
+     *
+     * @param username 用户的用户名
+     * @return 用户对象，如果未找到则返回 null
+     */
+    public User findByUsername(String username) {
+        return userMap.get(username);
     }
 }

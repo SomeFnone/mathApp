@@ -18,6 +18,14 @@ public interface UserRepository {
     User findByEmail(String email);
 
     /**
+     * 根据用户名查找用户。
+     *
+     * @param username 用户的用户名
+     * @return 用户实体
+     */
+    User findByUsername(String username);
+
+    /**
      * 保存用户。
      *
      * @param user 用户实体

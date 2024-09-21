@@ -42,10 +42,11 @@ public class RegistrationController {
     @PostMapping
     public ResponseEntity<Map<String, String>> register(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        String username = request.get("username");
         String verificationCode = request.get("verificationCode");
 
         if (verificationCode.equals(verificationCodes.get(email))) {
-            userService.register(email, request.get("password"));
+            userService.register(username, email, request.get("password"));
             verificationCodes.remove(email); // 注册成功后删除验证码
             return ResponseEntity.ok(Map.of("status", "success", "message", "注册成功！"));
         } else {
