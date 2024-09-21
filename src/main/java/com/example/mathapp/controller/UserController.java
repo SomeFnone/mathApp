@@ -17,28 +17,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    /**
-     * 显示用户注册页面。
-     *
-     * @return 注册页面的视图名称
-     */
-    @GetMapping("/register")
-    public String register() {
-        return "register";
-    }
 
-    /**
-     * 处理用户注册请求。
-     *
-     * @param email    用户的邮箱
-     * @param password 用户的密码
-     * @return 重定向到登录页面
-     */
-    @PostMapping("/register")
-    public String registerUser(@RequestParam String email, @RequestParam String password) {
-        userService.register(email, password);
-        return "redirect:/login";
-    }
 
     /**
      * 显示用户登录页面。
