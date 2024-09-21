@@ -15,7 +15,7 @@ public class SecurityConfig {
         http
                 .authorizeRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/login", "/register", "/error", "/quiz", "/generate-quiz", "/navigate-question",
+                                .requestMatchers("/login", "/register", "/register/sendVerificationEmail","/error", "/quiz", "/generate-quiz", "/navigate-question",
                                         "/submit-answers", "/check-errors", "/navigate-error").permitAll() // 允许未认证用户访问登录、注册和错误页面
                                 // .requestMatchers("/quiz").authenticated() // 允许认证用户访问选题、答题页面
                                 .anyRequest().authenticated()

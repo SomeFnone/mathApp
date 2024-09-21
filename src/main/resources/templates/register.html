@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>用户注册</title>
@@ -7,44 +7,31 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
-            margin: 0;
             padding: 20px;
         }
         .container {
-            max-width: 500px;
+            max-width: 400px;
             margin: auto;
             background: white;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px; /* 圆角边框 */
         }
         h2 {
             text-align: center;
-            color: #333;
         }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            font-size: 16px;
-            color: #333;
-            margin-top: 10px;
-        }
-        input[type="email"], input[type="password"], button {
+        label, input, button {
+            display: block;
             width: 100%;
+            margin-bottom: 10px;
+        }
+        input, button {
             padding: 10px;
-            margin-top: 5px;
             border: 1px solid #ccc;
-            border-radius: 5px; /* 圆角边框 */
-            box-sizing: border-box; /* 边框包含在宽度内 */
         }
         button {
             background-color: #5cb85c;
             color: white;
             cursor: pointer;
-            margin-top: 20px;
-            font-size: 16px;
         }
         button:hover {
             background-color: #4cae4c;
@@ -54,14 +41,86 @@
 <body>
 <div class="container">
     <h2>用户注册</h2>
-    <form th:action="@{/register}" method="post">
+    <form id="registrationForm">
         <label for="email">邮箱：</label>
-        <input type="email" id="email" name="email" required><br><br>
+        <input type="email" id="email" required>
 
         <label for="password">密码：</label>
-        <input type="password" id="password" name="password" required><br><br>
+        <input type="password" id="password" required>
+
+        <label for="verificationCode">验证码：</label>
+        <div style="display: flex;">
+            <input type="text" id="verificationCode" required style="flex-grow: 1;">
+            <button type="button" id="sendCodeButton" style="margin-left: 10px;">发送验证码</button>
+        </div>
+
         <button type="submit">注册</button>
+        <p id="errorMessage" style="color:red;"></p>
+        <p>已有账号？<a href="/login">登录</a></p>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function sendVerificationEmail() {
+            const email = document.getElementById('email').value;
+            const sendButton = document.getElementById('sendCodeButton');
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('请输入有效的邮箱地址');
+                return;
+            }
+
+            sendButton.disabled = true;
+            sendButton.innerText = '正在发送...';
+
+            fetch('/register/sendVerificationEmail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            }).then(response => response.json())
+                .then(data => {
+                    alert(data.status === 'success' ? '验证码已发送！' : '发送验证码失败');
+                }).catch(() => alert('发送验证码时出现错误'))
+                .finally(() => {
+                    sendButton.disabled = false;
+                    sendButton.innerText = '发送验证码';
+                });
+        }
+
+        document.getElementById('sendCodeButton').addEventListener('click', function(event) {
+            event.preventDefault();
+            sendVerificationEmail();
+        });
+
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const verificationCode = document.getElementById('verificationCode').value;
+
+            if (!email || !password || !verificationCode) {
+                alert('请填写所有必填项');
+                return;
+            }
+
+            fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password, verificationCode: verificationCode })
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    return response.json().then(data => {
+                        document.getElementById('errorMessage').textContent = data.message || '注册失败';
+                    });
+                }
+            }).catch(() => {
+                document.getElementById('errorMessage').textContent = '注册时出现错误';
+            });
+        });
+    });
+</script>
 </body>
 </html>
