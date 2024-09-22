@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>主页</title>
+    <title>Math App 主页</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,11 +15,22 @@
             height: 100vh;
         }
         .container {
+            max-width: 500px;
+            margin: auto;
             background: white;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px; /* 圆角边框 */
             text-align: center;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
         }
         button {
             background-color: #5cb85c;
@@ -30,17 +41,22 @@
             font-size: 16px;
             cursor: pointer;
             border-radius: 5px; /* 圆角边框 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         button:hover {
             background-color: #4cae4c;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
 <body>
-<div class="buttons">
-    <h2>请选择操作</h2>
-    <button onclick="location.href='/quiz'">刷题</button>
-    <button onclick="location.href='/change-password'">修改密码</button>
+<div class="container">
+    <img src="https://cdn.jsdelivr.net/gh/SomeFnone/blog_pic@main/img/69482F5E2EE332629572FC42C13570FD.jpg"
+         alt="Math App Logo">
+    <h2>欢迎来到 Math App</h2>
+    <button onclick="location.href='/login'">登录</button>
+    <button onclick="location.href='/register'">注册</button>
 </div>
 </body>
 </html>

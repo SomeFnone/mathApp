@@ -36,8 +36,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/login", "/register", "/register/sendVerificationEmail", "/error")
-                        .permitAll() // 允许未认证用户访问登录、注册和错误页面
+                        .requestMatchers( "/", "/mathapp", "/login",
+                                "/register", "/register/sendVerificationEmail", "/error")
+                        .permitAll() // 允许未认证用户访问空url、首页、登录、注册和错误页面
                         .anyRequest().authenticated() // 允许认证用户访问选题、答题等其他页面
                 )
                 .formLogin(formLogin -> formLogin

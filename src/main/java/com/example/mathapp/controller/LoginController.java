@@ -1,22 +1,24 @@
 package com.example.mathapp.controller;
 
 import com.example.mathapp.service.UserService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.ModelAndView;
 
+/**
+ * 控制用户登录页面的控制器类。
+ */
 @Controller
 public class LoginController {
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
     private final UserService userService;
 
+    /**
+     * 构造函数，注入 UserService。
+     *
+     * @param userService 用户服务，用于处理与用户相关的业务逻辑
+     */
     public LoginController(UserService userService) {
         this.userService = userService;
     }
