@@ -25,29 +25,42 @@
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* 使容器至少占据整个视口高度 */
         }
         .container {
-            max-width: 1000px; /* 增加容器的最大宽度 */
+            width: 800px; /* 固定宽度 */
+            height: 600px; /* 固定高度 */
             margin: auto;
             background: white;
-            padding: 20px;
+            padding: 30px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px; /* 圆角边框 */
+            min-width: 300px; /* 设置最小宽度以防止过窄 */
+            box-sizing: border-box;
+            overflow-y: auto; /* 当内容超出时显示垂直滚动条 */
         }
         .question {
             text-align: center; /* 居中对齐题目部分 */
-            margin-bottom: 20px; /* 增加题目的间距 */
+            margin-bottom: 30px; /* 增加题目的间距 */
         }
         .question h2 {
             color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
         }
         .question h3 {
             color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
         }
         .question p {
             text-align: center;
             margin-top: 10px;
             line-height: 1.6; /* 增加行高 */
+            font-size: 16px;
         }
         .question ul {
             list-style: none;
@@ -60,10 +73,12 @@
         .question li {
             margin: 10px;
             width: calc(50% - 20px); /* 使每个选项占据一半的宽度 */
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #ddd;
             border-radius: 5px;
             box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         .question label {
             font-size: 16px;
@@ -77,14 +92,13 @@
             background-color: #5cb85c;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             margin: 5px;
             font-size: 16px;
             cursor: pointer;
             border-radius: 5px;
-        }
-        button:hover {
-            background-color: #4cae4c;
+            outline: none; /* 移除默认焦点轮廓 */
+            transition: background-color 0.2s ease-in-out;
         }
         button:disabled {
             background-color: #ccc;
@@ -93,6 +107,12 @@
         .button-group {
             text-align: center; /* 居中对齐按钮组 */
             margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -116,7 +136,7 @@
                 <button type="submit" name="action" value="next" th:disabled="${currentIndex == totalQuestions - 1}">下一题</button>
                 <button type="submit" name="action" value="submit" th:if="${currentIndex == totalQuestions - 1}">提交</button>
             </div>
-            <div th:if="${errorMessage}" style="color: red; text-align: center;">
+            <div th:if="${errorMessage}" class="error-message">
                 <p th:text="${errorMessage}"></p>
             </div>
         </form>

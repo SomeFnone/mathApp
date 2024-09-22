@@ -15,32 +15,47 @@
             height: 100vh;
         }
         .container {
+            max-width: 500px; /* 最大宽度 */
+            margin: auto; /* 居中 */
             background: white;
-            padding: 20px;
+            padding: 30px; /* 内边距 */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px; /* 圆角边框 */
+            text-align: center;
+            transition: transform 0.3s ease-in-out; /* 过渡效果 */
+        }
+        .container:hover {
+            transform: scale(1.05); /* 鼠标悬停放大效果 */
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
             text-align: center;
         }
         button {
             background-color: #5cb85c;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 15px 30px;
             margin: 10px;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
             border-radius: 5px; /* 圆角边框 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease; /* 背景色过渡 */
         }
         button:hover {
             background-color: #4cae4c;
+            transform: translateY(-3px); /* 鼠标悬停时向上移动 */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* 鼠标悬停阴影效果 */
         }
     </style>
 </head>
 <body>
-<div class="buttons">
+<div class="container">
     <h2>请选择操作</h2>
     <button onclick="location.href='/quiz'">刷题</button>
-    <button onclick="location.href='/change-password'">修改密码</button>
+    <button onclick="location.href='/change-password'"> 修改密码 </button>
+    <button onclick="location.href='/logout'">退出登录</button>
 </div>
 </body>
 </html>

@@ -118,7 +118,7 @@
             const passwordConfirm = document.getElementById('passwordConfirm').value;
             const passwordRequirement = document.getElementById('passwordRequirement');
 
-            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,10}$/;
             if ((!regex.test(password)||!regex.test(passwordConfirm))&&password !== ''&&passwordConfirm !== '') {
                 passwordRequirement.style.display = 'block';
             } else {

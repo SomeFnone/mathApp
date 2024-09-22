@@ -52,7 +52,10 @@
         }
         button:hover {
             background-color: #4cae4c;
+            transform: translateY(-3px); /* 鼠标悬停时向上移动 */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* 鼠标悬停阴影效果 */
         }
+        
     </style>
 </head>
 <body>
@@ -69,6 +72,7 @@
         <input type="number" id="questionCount" name="questionCount" min="1" max="50" required>
         <br><br>
         <button type="submit">生成试卷</button>
+        <button onclick="location.href='/home'">返回</button>
     </form>
 </div>
 </body>
