@@ -21,7 +21,7 @@ import java.util.List;
 @Controller
 public class QuizController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
     /**
      * 处理初始页面的GET请求，展示可选择的年级。

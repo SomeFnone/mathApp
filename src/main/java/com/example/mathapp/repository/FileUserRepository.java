@@ -4,8 +4,7 @@ import com.example.mathapp.model.User;
 import org.springframework.stereotype.Repository;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 用户数据存储类，使用文件系统来存储用户数据。
@@ -79,5 +78,14 @@ public class FileUserRepository {
      */
     public User findByUsername(String username) {
         return userMap.get(username);
+    }
+
+    /**
+     * 获取所有用户数据。
+     *
+     * @return 用户列表
+     */
+    public List<User> getAllUsers() {
+        return new ArrayList<>(userMap.values());
     }
 }

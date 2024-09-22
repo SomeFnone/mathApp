@@ -11,41 +11,25 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * 用户控制器，处理用户注册、登录和密码修改请求。
+ * 用户控制器，处理用户的登录、注册和密码修改请求。
  */
 @Controller
-public class UserController {
+public class HomeController {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
+
     @Autowired
     private UserService userService;
 
     /**
-     * 显示用户登录页面。
+     * 显示用户主页页面。
      *
      * @return 登录页面的视图名称
      */
-//    @GetMapping("/login")
-//    public String login() {
-//        return "login";
-//    }
-
-//    /**
-//     * 处理用户登录请求。
-//     *
-//     * @param username    用户的邮箱
-//     * @param password 用户的密码
-//     * @return 登录成功后重定向到试卷生成页面，否则返回登录页面
-//     */
-//    @PostMapping("/login")
-//    public String loginUser(@RequestParam String username, @RequestParam String password) {
-//        logger.debug("Attempting to login with username: {}", username); // 日志输出
-//        if (userService.login(username, password)) {
-//            return "function_selection_page";
-//        }
-//        // 重定向
-//        return "redirect:/login";
-//    }
+    @GetMapping("/home")
+    public String home() {
+        return "home";
+    }
 
     /**
      * 显示密码修改页面。
