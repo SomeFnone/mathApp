@@ -101,6 +101,6 @@ public class ExpressionEvaluator {
         // 添加适当的括号
         expression = expression.replaceAll("\\(([^()]+)\\)", "\\\\left($1\\\\right)");
         // 创建 Markdown 格式的表达式
-        return "$" + expression + "$";
+        return "$$" + expression + "$$";
     }
 }

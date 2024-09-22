@@ -47,7 +47,6 @@ public class SecurityConfig {
                         .passwordParameter("password") //密码字段
                         .successHandler(successHandler) // 自定义登录成功处理
                         .failureHandler(failureHandler) // 自定义登录失败处理
-                        .defaultSuccessUrl("/home", true) // 登录成功后跳转到 /home
                         .permitAll() // 放开登录页面的访问权
                 )
                 .logout(logout -> logout
