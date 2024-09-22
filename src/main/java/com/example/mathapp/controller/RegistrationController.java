@@ -49,13 +49,18 @@ public class RegistrationController {
             userService.register(username, email, request.get("password"));
             verificationCodes.remove(email); // 注册成功后删除验证码
             return ResponseEntity.ok(Map.of("status", "success", "message", "注册成功！"));
-        } else {
+        }
+        else if(!verificationCode.equals(verificationCodes.get(email))){
             return ResponseEntity.status(400).body(Map.of("status", "error", "message", "验证码错误"));
         }
+        return ResponseEntity.status(400).body(Map.of("status", "error", "message", "未知错误"));
     }
 
     // 生成6位随机验证码
     private String generateVerificationCode() {
         return String.format("%06d", new Random().nextInt(999999));
     }
+
+
+
 }

@@ -34,7 +34,8 @@
         input[type="text"], input[type="email"], input[type="password"], button {
             width: 100%;
             padding: 10px;
-            margin-top: 5px;
+            margin-top: 3px;
+            margin-bottom: 3px; /* 减少垂直间距 */
             border: 1px solid #ccc;
             border-radius: 5px; /* 圆角边框 */
             box-sizing: border-box; /* 边框包含在宽度内 */
@@ -57,6 +58,12 @@
         a {
             color: #337ab7;
         }
+        .error-message {
+            font-size: 12px;
+            color: red;
+            margin-top: -10px;
+            margin-bottom: 3px; /* 减少垂直间距 */
+        }
     </style>
 </head>
 <body>
@@ -64,28 +71,60 @@
     <h2>用户注册</h2>
     <form id="registrationForm">
         <label for="username">用户名：</label>
-        <input type="text" id="username" name="username" required><br><br>
+        <input type="text" id="username" name="username" required><br>
 
         <label for="email">邮箱：</label>
-        <input type="email" id="email" name="email" required><br><br>
+        <input type="email" id="email" name="email" required><br>
 
         <label for="password">密码：</label>
-        <input type="password" id="password" name="password" required><br><br>
+        <input type="password" id="password" name="password" required placeholder="6-10个字符，包含大小写字母和数字"><br>
 
+        <label for="passwordConfirm">确认密码：</label>
+        <input type="password" id="passwordConfirm" name="passwordConfirm" required placeholder="重复输入密码"><br>
+
+        <p id="passwordMismatch" class="error-message" style="display:none;">两次输入的密码不一致！</p><br>
+        <p id="passwordRequirement" class="error-message" style="display:none;">密码不符合要求！</p><br>
         <label for="verificationCode">验证码：</label>
         <div style="display: flex;">
             <input type="text" id="verificationCode" name="verificationCode" required style="flex-grow: 1;">
             <button type="button" id="sendCodeButton" style="margin-left: 10px;">发送验证码</button>
-        </div><br><br>
+        </div><br>
 
         <button type="submit">注册</button>
         <p id="errorMessage" style="color:red;"></p>
         <p>已有账号？<a href="/login">登录</a></p>
+
     </form>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        function checkPasswords() {
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const passwordMismatch = document.getElementById('passwordMismatch');
+
+            if (password !== passwordConfirm&&password !== '') {
+                // 显示错误信息
+                passwordMismatch.style.display = 'block';
+            } else {
+                // 隐藏错误信息
+                passwordMismatch.style.display = 'none';
+            }
+        }
+
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            const passwordRequirement = document.getElementById('passwordRequirement');
+
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!regex.test(password)&&password !== '') {
+                passwordRequirement.style.display = 'block';
+            } else {
+                passwordRequirement.style.display = 'none';
+            }
+        }
+
         function sendVerificationEmail() {
             const email = document.getElementById('email').value;
             const sendButton = document.getElementById('sendCodeButton');
@@ -119,10 +158,15 @@
 
         document.getElementById('registrationForm').addEventListener('submit', function(event) {
             event.preventDefault();
+            checkPasswords();
+            validatePassword();
+
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
             const verificationCode = document.getElementById('verificationCode').value;
+
 
             if (!username || !email || !password || !verificationCode) {
                 alert('请填写所有必填项');
@@ -132,7 +176,7 @@
             fetch('/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: username, email: email, password: password, verificationCode: verificationCode })
+                body: JSON.stringify({ username: username, email: email, password: password, passwordConfirm: passwordConfirm, verificationCode: verificationCode })
             }).then(response => {
                 if (response.ok) {
                     window.location.href = '/login';
@@ -145,6 +189,8 @@
                 document.getElementById('errorMessage').textContent = '注册时出现错误';
             });
         });
+
+        document.getElementById('password').addEventListener('input', validatePassword);
     });
 </script>
 </body>

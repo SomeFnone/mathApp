@@ -64,7 +64,7 @@
     </div>
 
     <div class="buttons">
-        <button onclick="location.href='/login'">返回登录页面</button>
+        <button onclick="location.href='/logout'">退出登录</button>
         <button onclick="location.href='/quiz'">继续答题</button>
         <button th:disabled="${score == totalQuestions * 10}" onclick="location.href='/check-errors'">查看错题</button>
     </div>
