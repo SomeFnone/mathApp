@@ -51,11 +51,13 @@ public class UserService {
      * @param oldPassword  旧密码
      * @param newPassword  新密码
      */
-    public void changePassword(String username, String oldPassword, String newPassword) {
+    public boolean changePassword(String username, String oldPassword, String newPassword) {
         User user = userRepository.findByUsername(username);
         if (user != null && user.getPassword().equals(oldPassword)) {
             user.setPassword(newPassword);
             userRepository.save(user);
+            return true;
         }
+        else return false;
     }
 }
