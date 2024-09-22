@@ -36,9 +36,9 @@ public class HomeController {
      *
      * @return 密码修改页面的视图名称
      */
-    @GetMapping("/changePassword")
+    @GetMapping("/change-password")
     public String changePassword() {
-        return "changePassword";
+        return "change-password";
     }
 
     /**
@@ -50,7 +50,7 @@ public class HomeController {
      * @param request 包含密码更改所需信息的Map，键为"username"、"oldPassword"和"newPassword"
      * @return ResponseEntity对象，包含一个Map作为响应体，其中包含状态和消息
      */
-    @PutMapping("/changePassword")
+    @PutMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(@RequestBody Map<String, String> request) {
         boolean success = userService.changePassword(
                 request.get("username"),
