@@ -81,16 +81,39 @@ public class QuizController {
             quizSession.setUserAnswer(answer);
         }
 
-        if ("next".equals(action)) {
-            quizSession.nextQuestion();
-        } else if ("previous".equals(action)) {
-            quizSession.previousQuestion();
-        } else if ("submit".equals(action)) {
-            // Ensure the last answer is saved before redirecting to /submit-answers
+        // 如果用户点击了“提交”按钮，检查是否有未回答的题目
+        if ("submit".equals(action)) {
+            Double[] userAnswers = quizSession.getUserAnswers();
+            boolean hasUnansweredQuestions = false;
+
+            for (Double userAnswer : userAnswers) {
+                if (userAnswer == null) {
+                    hasUnansweredQuestions = true;
+                    break;
+                }
+            }
+
+            if (hasUnansweredQuestions) {
+                model.addAttribute("errorMessage", "您还有未回答的题目，请完成所有题目后再提交。");
+                model.addAttribute("question", quizSession.getCurrentQuestion());
+                model.addAttribute("currentIndex", quizSession.getCurrentQuestionIndex());
+                model.addAttribute("totalQuestions", quizSession.getTotalQuestions());
+                model.addAttribute("userAnswers", quizSession.getUserAnswers());
+                return "quiz-questions";
+            }
+
+            // 确保最后一题的答案在提交前被保存
             if (quizSession.getCurrentQuestionIndex() == quizSession.getTotalQuestions() - 1 && answer != null) {
                 quizSession.setUserAnswer(answer);
             }
             return "redirect:/submit-answers";
+        }
+
+        // 处理"下一题"和"上一题"
+        if ("next".equals(action)) {
+            quizSession.nextQuestion();
+        } else if ("previous".equals(action)) {
+            quizSession.previousQuestion();
         }
 
         model.addAttribute("question", quizSession.getCurrentQuestion());

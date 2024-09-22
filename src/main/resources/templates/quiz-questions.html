@@ -116,6 +116,9 @@
                 <button type="submit" name="action" value="next" th:disabled="${currentIndex == totalQuestions - 1}">下一题</button>
                 <button type="submit" name="action" value="submit" th:if="${currentIndex == totalQuestions - 1}">提交</button>
             </div>
+            <div th:if="${errorMessage}" style="color: red; text-align: center;">
+                <p th:text="${errorMessage}"></p>
+            </div>
         </form>
     </div>
 </div>
