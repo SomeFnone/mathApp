@@ -40,6 +40,11 @@
             border-radius: 5px; /* 圆角边框 */
             box-sizing: border-box; /* 边框包含在宽度内 */
         }
+        .error {
+            color: red;
+            font-size: 14px;
+            display: none;
+        }
         button {
             background-color: #5cb85c;
             color: white;
@@ -57,11 +62,24 @@
         }
         
     </style>
+    <script>
+        function validateForm(event) {
+            const questionCount = document.getElementById("questionCount").value;
+            const errorElement = document.getElementById("error-message");
+
+            if (questionCount < 10 || questionCount > 30) {
+                errorElement.style.display = "block";
+                event.preventDefault(); // 阻止表单提交
+            } else {
+                errorElement.style.display = "none";
+            }
+        }
+    </script>
 </head>
 <body>
 <div class="container">
     <h2>请选择年级和题目数量</h2>
-    <form th:action="@{/generate-quiz}" method="post">
+    <form th:action="@{/generate-quiz}" method="post" onsubmit="validateForm(event)">
         <label for="grade">选择年级:</label>
         <select id="grade" name="grade" required>
             <option value="">-- 请选择 --</option>
@@ -70,6 +88,7 @@
         <br><br>
         <label for="questionCount">生成题目数量:</label>
         <input type="number" id="questionCount" name="questionCount" min="1" max="50" required>
+        <span id="error-message" class="error">题目数量必须在10到30之间！</span>
         <br><br>
         <button type="submit">生成试卷</button>
         <button onclick="location.href='/home'">返回</button>

@@ -52,9 +52,14 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout") // 配置注销的URL
-                        .logoutSuccessUrl("/login") //注销成功后的跳转页面
+                        .logoutSuccessUrl("/mathapp") //注销成功后的跳转页面
                         .deleteCookies() //清除cookies
                         .permitAll() // 配置注销
+                )
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.sendRedirect("/mathapp"); // 未认证用户访问受限页面时重定向到 /mathapp
+                        })
                 )
                 .csrf(csrf -> csrf.disable()); // 禁用CSRF
 
