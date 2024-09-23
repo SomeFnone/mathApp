@@ -25,20 +25,43 @@
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* 使容器至少占据整个视口高度 */
         }
         .container {
-            max-width: 800px;
+            width: 600px; /* 缩小宽度 */
+            height: 500px; /* 缩小高度 */
             margin: auto;
             background: white;
-            padding: 20px;
+            padding: 30px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            border-radius: 10px; /* 圆角边框 */
+            min-width: 300px; /* 设置最小宽度以防止过窄 */
+            box-sizing: border-box;
+            overflow-y: auto; /* 当内容超出时显示垂直滚动条 */
+            position: relative; /* 使按钮位置相对于容器定位 */
         }
         .question {
-            text-align: center;
+            text-align: center; /* 居中对齐题目部分 */
+            margin-bottom: 30px; /* 增加题目的间距 */
         }
-        .question h2, h3 {
+        .question h2 {
             color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .question h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .question p {
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.6; /* 增加行高 */
+            font-size: 16px;
         }
         .question ul {
             list-style: none;
@@ -46,15 +69,22 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
+            gap: 10px; /* 增加选项之间的间隙 */
         }
         .question li {
             margin: 10px;
-            width: 100%;
+            width: calc(50% - 20px); /* 使每个选项占据一半的宽度 */
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         .question label {
             font-size: 16px;
             color: #333;
-            display: block;
+            display: block; /* 使每个选项独占一行 */
         }
         .correct-answer {
             color: green;
@@ -66,15 +96,31 @@
             background-color: #5cb85c;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             margin: 5px;
             font-size: 16px;
             cursor: pointer;
             border-radius: 5px;
+            outline: none; /* 移除默认焦点轮廓 */
+            transition: background-color 0.2s ease-in-out;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
         .button-group {
-            text-align: center;
+            text-align: center; /* 居中对齐按钮组 */
             margin-top: 20px;
+            position: absolute; /* 固定在容器底部 */
+            bottom: 10px; /* 距离底部的距离 */
+            left: 50%; /* 水平居中 */
+            transform: translateX(-50%); /* 水平居中 */
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -88,8 +134,8 @@
             <p th:utext="${errorQuestions[currentIndex].questionText}"></p>
 
             <!-- 显示正确答案和用户错误答案 -->
-            <p>正确答案: <span th:text="${correctAnswers[currentIndex]}"></span></p>
-            <p>你的答案: <span th:text="${userWrongAnswers[currentIndex]}"></span></p>
+            <p>正确答案: <span th:text="${correctAnswers[currentIndex]}" class="correct-answer"></span></p>
+            <p>你的答案: <span th:text="${userWrongAnswers[currentIndex]}" class="wrong-answer"></span></p>
 
             <div class="button-group">
                 <button type="submit" name="action" value="previous" th:disabled="${currentIndex == 0}">上一题</button>
@@ -100,5 +146,21 @@
         </form>
     </div>
 </div>
+
+<!-- 启用 MathJax 渲染 -->
+<script>
+    window.onload = function() {
+        if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise().then(function() {
+                console.log("MathJax 渲染完成");
+            }).catch(function(err) {
+                console.error("MathJax 渲染失败:", err);
+            });
+        } else {
+            console.error("MathJax 没有加载");
+        }
+    };
+</script>
+
 </body>
 </html>
