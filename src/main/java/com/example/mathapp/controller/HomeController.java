@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * 用户控制器，处理用户的登录、注册和密码修改请求。
+ * 个人主页控制器，处理用户和主页之间的互动。
  */
 @Controller
 public class HomeController {
