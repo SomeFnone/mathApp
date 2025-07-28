@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>实时XY关系图 - 带分析功能</title>
+  <script src="qrc:/resources/js/echarts.min.js"></script>
+  <script src="qrc:/resources/js/qwebchannel.js"></script>
+  <!-- 引入 echarts-stat 库，你需要下载并放在 resources/js/ 目录下 -->
+  <script src="qrc:/resources/js/ecStat.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #controls {
+      padding: 8px;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    label { font-weight: bold; }
+    input, select, button { padding: 4px; }
+
+    /* 分析菜单样式 */
+    .analysis-menu {
+      position: absolute;
+      top: 50px;
+      right: 20px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
+      min-width: 300px;
+      display: none;
+    }
+    
+    .analysis-menu-header {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      font-weight: bold;
+      border-radius: 4px 4px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .analysis-menu-content {
+      padding: 15px;
+    }
+    
+    .analysis-section {
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+    }
+    
+    .analysis-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    .analysis-section h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .analysis-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .analysis-button {
+      background: #2196F3;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .analysis-button:hover {
+      background: #1976D2;
+    }
+    
+    .analysis-results {
+      background: #f9f9f9;
+      padding: 8px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 12px;
+      min-height: 20px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .analysis-input {
+      width: 60px;
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+      border-radius: 2px;
+    }
+
+    .data-source-select {
+      width: 120px;
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 控制栏 -->
+  <div id="controls">
+    <label>X轴数据源:</label>
+    <select id="xPoint" style="width:160px;"></select>
+
+    <label>Y轴数据源:</label>
+    <select id="yPoint" style="width:160px;"></select>
+
+    <label>频率(ms):</label>
+    <input type="number" id="freq" value="100" min="10" step="10" style="width:80px;">
+
+    <button onclick="startPolling()">▶ 开始</button>
+    <button onclick="stopPolling()">⏹ 停止</button>
+    <button onclick="sendDataToBackend()">⬇ 导出CSV</button>
+  </div>
+
+  <!-- 图表容器 -->
+  <div id="main" style="width:100%; height:85vh; position: relative;"></div>
+
+  <!-- 分析菜单 -->
+  <div id="analysisMenu" class="analysis-menu">
+    <div class="analysis-menu-header">
+      📊 数据分析工具
+      <button class="close-btn" onclick="toggleAnalysisMenu()">&times;</button>
+    </div>
+    <div class="analysis-menu-content">
+      <!-- 差值分析 -->
+      <div class="analysis-section">
+        <h4>📈 差值分析</h4>
+        <div class="analysis-controls">
+          <label>数据源1:</label>
+          <select id="diffSource1" class="data-source-select">
+            <option value="x">X轴数据</option>
+            <option value="y">Y轴数据</option>
+          </select>
+          <label>数据源2:</label>
+          <select id="diffSource2" class="data-source-select">
+            <option value="x">X轴数据</option>
+            <option value="y" selected>Y轴数据</option>
+          </select>
+          <button class="analysis-button" onclick="performDifferenceAnalysis()">分析差值</button>
+        </div>
+        <div id="diffResults" class="analysis-results">点击"分析差值"查看结果...</div>
+      </div>
+
+      <!-- 拟合分析 -->
+      <div class="analysis-section">
+        <h4>📉 拟合分析</h4>
+        <div class="analysis-controls">
+          <label>拟合类型:</label>
+          <select id="regressionType" class="data-source-select">
+            <option value="linear">线性拟合</option>
+            <option value="polynomial">多项式拟合</option>
+            <option value="exponential">指数拟合</option>
+            <option value="logarithmic">对数拟合</option>
+          </select>
+          <label>多项式阶数:</label>
+          <input type="number" id="polynomialOrder" value="2" min="2" max="6" class="analysis-input">
+          <button class="analysis-button" onclick="performRegression()">拟合分析</button>
+          <button class="analysis-button" onclick="showResiduals()">查看残差</button>
+        </div>
+        <div id="regressionResults" class="analysis-results">点击"拟合分析"查看结果...</div>
+      </div>
+
+      <!-- 统计分析 -->
+      <div class="analysis-section">
+        <h4>📊 统计分析</h4>
+        <div class="analysis-controls">
+          <button class="analysis-button" onclick="calculateStatistics()">计算统计量</button>
+          <button class="analysis-button" onclick="calculateCorrelation()">相关系数</button>
+          <button class="analysis-button" onclick="findExtremes()">极值分析</button>
+        </div>
+        <div id="statisticsResults" class="analysis-results">点击相应按钮查看统计结果...</div>
+      </div>
+
+      <!-- 导出分析 -->
+      <div class="analysis-section">
+        <h4>💾 导出分析</h4>
+        <div class="analysis-controls">
+          <button class="analysis-button" onclick="exportAnalysisResults()">导出分析结果</button>
+          <button class="analysis-button" onclick="exportFittingData()">导出拟合数据</button>
+        </div>
+        <div id="exportResults" class="analysis-results">选择导出选项...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chart = echarts.init(document.getElementById('main'));
+    window.myChart = chart;
+
+    const historyPoints = [];
+    let currentPoint = [];
+    let regressionData = null;
+    let residualsData = null;
+    let analysisResults = {
+      difference: null,
+      regression: null,
+      statistics: null,
+      correlation: null
+    };
+
+    const option = {
+      title: { text: '实时XY关系图', left: 'center' },
+      tooltip: {
+        trigger: 'item',
+        formatter: function (params) {
+          const data = params.data;
+          if (params.seriesName === '拟合曲线') {
+            return `拟合线<br/>X: ${data[0].toFixed(3)}<br/>Y: ${data[1].toFixed(3)}`;
+          } else if (params.seriesName === '残差') {
+            return `残差<br/>X: ${data[0].toFixed(3)}<br/>残差: ${data[1].toFixed(3)}`;
+          }
+          return `X: ${data[0]}<br/>Y: ${data[1]}<br/>Time: ${data[2]}`;
+        }
+      },
+      // 自定义工具栏，添加分析按钮
+      toolbox: {
+        feature: {
+          customAnalysis: {
+            show: true,
+            title: '数据分析',
+            icon: 'M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m165.4 618.2l-66-.3L512 563.4l-99.3 118.4-66.1.3c-4.4 0-8-3.6-8-8 0-1.9.7-3.7 1.9-5.2l130.1-155L340.5 359a8.32 8.32 0 0 1-1.9-5.2c0-4.4 3.6-8 8-8l66.1.3L512 464.6l99.3-118.4 66-.3c4.4 0 8 3.6 8 8 0 1.9-.7 3.7-1.9 5.2L553.5 514l130 155c1.2 1.5 1.9 3.3 1.9 5.2 0 4.4-3.6 8-8 8z',
+            onclick: function() {
+              toggleAnalysisMenu();
+            }
+          },
+          dataZoom: {
+            show: true,
+            title: {
+              zoom: '区域缩放',
+              back: '区域缩放还原'
+            }
+          },
+          restore: {
+            show: true,
+            title: '还原'
+          },
+          saveAsImage: {
+            show: true,
+            title: '保存为图片'
+          }
+        }
+      },
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'weakFilter' },
+        { type: 'inside', yAxisIndex: 0, filterMode: 'weakFilter' },
+        { type: 'slider', xAxisIndex: 0 },
+        { type: 'slider', yAxisIndex: 0 }
+      ],
+      xAxis: { name: 'X值', type: 'value' },
+      yAxis: { name: 'Y值', type: 'value' },
+      series: [
+        {
+          name: '历史数据点',
+          type: 'scatter',
+          data: [],
+          symbolSize: 6,
+          itemStyle: { color: 'blue', opacity: 0.3 },
+          z: 1
+        },
+        {
+          name: '当前点',
+          type: 'scatter',
+          data: [],
+          symbolSize: 10,
+          itemStyle: { color: 'red' },
+          z: 2
+        }
+      ]
+    };
+    chart.setOption(option);
+
+    // 切换分析菜单显示状态
+    function toggleAnalysisMenu() {
+      const menu = document.getElementById('analysisMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // 初始化下拉框
+    function initDropdown(id) {
+      const sel = document.getElementById(id);
+      for (let i = 1; i <= 64; i++) {
+        let val = `root.testdb.d1.s${i}`;
+        let opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = `s${i}`;
+        sel.appendChild(opt);
+      }
+      sel.value = `root.testdb.d1.s${id === 'xPoint' ? 1 : 2}`;
+    }
+    initDropdown("xPoint");
+    initDropdown("yPoint");
+
+    // 差值分析
+    function performDifferenceAnalysis() {
+      if (historyPoints.length < 2) {
+        document.getElementById('diffResults').innerHTML = '❌ 数据不足，需要至少2个数据点';
+        return;
+      }
+
+      const source1 = document.getElementById('diffSource1').value;
+      const source2 = document.getElementById('diffSource2').value;
+      
+      const data1 = historyPoints.map(p => source1 === 'x' ? p[0] : p[1]);
+      const data2 = historyPoints.map(p => source2 === 'x' ? p[0] : p[1]);
+      
+      const differences = data1.map((val, idx) => val - data2[idx]);
+      const maxDiff = Math.max(...differences);
+      const minDiff = Math.min(...differences);
+      const avgDiff = differences.reduce((a, b) => a + b, 0) / differences.length;
+      
+      analysisResults.difference = {
+        differences,
+        maxDiff,
+        minDiff,
+        avgDiff,
+        source1,
+        source2
+      };
+
+      document.getElementById('diffResults').innerHTML = `
+        ✅ 差值分析结果：<br/>
+        📊 数据点数: ${differences.length}<br/>
+        📈 最大差值: ${maxDiff.toFixed(4)}<br/>
+        📉 最小差值: ${minDiff.toFixed(4)}<br/>
+        📊 平均差值: ${avgDiff.toFixed(4)}<br/>
+        📏 差值范围: ${(maxDiff - minDiff).toFixed(4)}
+      `;
+    }
+
+    // 拟合分析
+    function performRegression() {
+      if (historyPoints.length < 3) {
+        document.getElementById('regressionResults').innerHTML = '❌ 数据不足，需要至少3个数据点';
+        return;
+      }
+
+      // 检查是否有ecStat库
+      if (typeof ecStat === 'undefined') {
+        document.getElementById('regressionResults').innerHTML = '❌ echarts-stat库未加载，请确保已引入ecStat.js';
+        return;
+      }
+
+      const regressionType = document.getElementById('regressionType').value;
+      const order = parseInt(document.getElementById('polynomialOrder').value);
+      
+      // 准备数据：[x, y] 格式
+      const data = historyPoints.map(p => [p[0], p[1]]);
+      
+      try {
+        let regression;
+        if (regressionType === 'polynomial') {
+          regression = ecStat.regression(regressionType, data, order);
+        } else {
+          regression = ecStat.regression(regressionType, data);
+        }
+        
+        regressionData = regression;
+        
+        // 计算R²（决定系数）
+        const actualY = data.map(d => d[1]);
+        const predictedY = regression.points.map(p => p[1]);
+        const meanY = actualY.reduce((a, b) => a + b) / actualY.length;
+        
+        const ssTotal = actualY.reduce((sum, y) => sum + Math.pow(y - meanY, 2), 0);
+        const ssRes = actualY.reduce((sum, y, i) => {
+          const predicted = predictedY.find(p => Math.abs(p - y) < 0.001) || predictedY[i];
+          return sum + Math.pow(y - predicted, 2);
+        }, 0);
+        const rSquared = 1 - (ssRes / ssTotal);
+
+        // 显示拟合曲线
+        const currentOption = chart.getOption();
+        const newSeries = [...currentOption.series];
+        
+        // 移除之前的拟合曲线
+        const fitIndex = newSeries.findIndex(s => s.name === '拟合曲线');
+        if (fitIndex !== -1) {
+          newSeries.splice(fitIndex, 1);
+        }
+        
+        // 添加新的拟合曲线
+        newSeries.push({
+          name: '拟合曲线',
+          type: 'line',
+          data: regression.points,
+          lineStyle: { color: '#FF6B6B', width: 2 },
+          symbol: 'none',
+          z: 3
+        });
+
+        chart.setOption({ series: newSeries });
+
+        analysisResults.regression = regression;
+
+        document.getElementById('regressionResults').innerHTML = `
+          ✅ ${regressionType === 'linear' ? '线性' : 
+              regressionType === 'polynomial' ? `${order}次多项式` :
+              regressionType === 'exponential' ? '指数' : '对数'}拟合结果：<br/>
+          📈 拟合表达式: ${regression.expression}<br/>
+          📊 决定系数 R²: ${rSquared.toFixed(4)}<br/>
+          📏 拟合点数: ${regression.points.length}<br/>
+          ${regressionType === 'linear' ? 
+            `📈 斜率: ${regression.parameter.gradient?.toFixed(4) || 'N/A'}<br/>
+             📊 截距: ${regression.parameter.intercept?.toFixed(4) || 'N/A'}` : 
+            '📊 参数已计算完成'}
+        `;
+      } catch (error) {
+        document.getElementById('regressionResults').innerHTML = `❌ 拟合分析失败: ${error.message}`;
+      }
+    }
+
+    // 显示残差
+    function showResiduals() {
+      if (!regressionData) {
+        document.getElementById('regressionResults').innerHTML = '❌ 请先进行拟合分析';
+        return;
+      }
+
+      const data = historyPoints.map(p => [p[0], p[1]]);
+      const residuals = [];
+      
+      data.forEach(point => {
+        const [x, actualY] = point;
+        // 在拟合曲线中找到最接近的x值对应的y值
+        let closestPoint = regressionData.points[0];
+        let minDistance = Math.abs(x - closestPoint[0]);
+        
+        for (let fitPoint of regressionData.points) {
+          const distance = Math.abs(x - fitPoint[0]);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestPoint = fitPoint;
+          }
+        }
+        
+        const predictedY = closestPoint[1];
+        const residual = actualY - predictedY;
+        residuals.push([x, residual]);
+      });
+
+      residualsData = residuals;
+
+      // 显示残差图
+      const currentOption = chart.getOption();
+      const newSeries = [...currentOption.series];
+      
+      // 移除之前的残差
+      const residualIndex = newSeries.findIndex(s => s.name === '残差');
+      if (residualIndex !== -1) {
+        newSeries.splice(residualIndex, 1);
+      } else {
+        // 添加残差散点图
+        newSeries.push({
+          name: '残差',
+          type: 'scatter',
+          data: residuals,
+          symbolSize: 4,
+          itemStyle: { color: '#FFA726' },
+          z: 4
+        });
+      }
+
+      chart.setOption({ series: newSeries });
+
+      const meanResidual = residuals.reduce((sum, r) => sum + Math.abs(r[1]), 0) / residuals.length;
+      document.getElementById('regressionResults').innerHTML += `<br/>📊 平均残差: ${meanResidual.toFixed(4)}`;
+    }
+
+    // 计算统计量
+    function calculateStatistics() {
+      if (historyPoints.length === 0) {
+        document.getElementById('statisticsResults').innerHTML = '❌ 没有数据';
+        return;
+      }
+
+      const xData = historyPoints.map(p => p[0]);
+      const yData = historyPoints.map(p => p[1]);
+
+      // 使用ecStat库计算统计量（如果可用）
+      let stats = {};
+      if (typeof ecStat !== 'undefined' && ecStat.statistics) {
+        stats = {
+          xMean: ecStat.statistics.mean(xData),
+          yMean: ecStat.statistics.mean(yData),
+          xMax: ecStat.statistics.max(xData),
+          yMax: ecStat.statistics.max(yData),
+          xMin: ecStat.statistics.min(xData),
+          yMin: ecStat.statistics.min(yData),
+          xSum: ecStat.statistics.sum(xData),
+          ySum: ecStat.statistics.sum(yData)
+        };
+      } else {
+        // 手动计算
+        stats = {
+          xMean: xData.reduce((a, b) => a + b) / xData.length,
+          yMean: yData.reduce((a, b) => a + b) / yData.length,
+          xMax: Math.max(...xData),
+          yMax: Math.max(...yData),
+          xMin: Math.min(...xData),
+          yMin: Math.min(...yData),
+          xSum: xData.reduce((a, b) => a + b),
+          ySum: yData.reduce((a, b) => a + b)
+        };
+      }
+
+      analysisResults.statistics = stats;
+
+      document.getElementById('statisticsResults').innerHTML = `
+        ✅ 统计分析结果：<br/>
+        📊 数据点数: ${historyPoints.length}<br/>
+        📈 X - 均值: ${stats.xMean.toFixed(4)}, 最大: ${stats.xMax.toFixed(4)}, 最小: ${stats.xMin.toFixed(4)}<br/>
+        📈 Y - 均值: ${stats.yMean.toFixed(4)}, 最大: ${stats.yMax.toFixed(4)}, 最小: ${stats.yMin.toFixed(4)}<br/>
+        📊 X总和: ${stats.xSum.toFixed(4)}<br/>
+        📊 Y总和: ${stats.ySum.toFixed(4)}
+      `;
+    }
+
+    // 计算相关系数
+    function calculateCorrelation() {
+      if (historyPoints.length < 2) {
+        document.getElementById('statisticsResults').innerHTML = '❌ 需要至少2个数据点计算相关系数';
+        return;
+      }
+
+      const xData = historyPoints.map(p => p[0]);
+      const yData = historyPoints.map(p => p[1]);
+      
+      const n = xData.length;
+      const xMean = xData.reduce((a, b) => a + b) / n;
+      const yMean = yData.reduce((a, b) => a + b) / n;
+      
+      let numerator = 0;
+      let xDenominator = 0;
+      let yDenominator = 0;
+      
+      for (let i = 0; i < n; i++) {
+        const xDiff = xData[i] - xMean;
+        const yDiff = yData[i] - yMean;
+        numerator += xDiff * yDiff;
+        xDenominator += xDiff * xDiff;
+        yDenominator += yDiff * yDiff;
+      }
+      
+      const correlation = numerator / Math.sqrt(xDenominator * yDenominator);
+      
+      analysisResults.correlation = correlation;
+
+      let interpretation = '';
+      const absCorr = Math.abs(correlation);
+      if (absCorr >= 0.8) interpretation = '强相关';
+      else if (absCorr >= 0.5) interpretation = '中等相关';
+      else if (absCorr >= 0.3) interpretation = '弱相关';
+      else interpretation = '几乎无相关';
+
+      document.getElementById('statisticsResults').innerHTML = `
+        ✅ 相关性分析：<br/>
+        📊 皮尔逊相关系数: ${correlation.toFixed(4)}<br/>
+        📈 相关性强度: ${interpretation}<br/>
+        📊 数据点数: ${n}
+      `;
+    }
+
+    // 极值分析
+    function findExtremes() {
+      if (historyPoints.length === 0) {
+        document.getElementById('statisticsResults').innerHTML = '❌ 没有数据';
+        return;
+      }
+
+      const xData = historyPoints.map(p => p[0]);
+      const yData = historyPoints.map(p => p[1]);
+      
+      const xMaxIndex = xData.indexOf(Math.max(...xData));
+      const xMinIndex = xData.indexOf(Math.min(...xData));
+      const yMaxIndex = yData.indexOf(Math.max(...yData));
+      const yMinIndex = yData.indexOf(Math.min(...yData));
+
+      document.getElementById('statisticsResults').innerHTML = `
+        ✅ 极值分析：<br/>
+        📈 X最大值: ${xData[xMaxIndex].toFixed(4)} (索引: ${xMaxIndex})<br/>
+        📉 X最小值: ${xData[xMinIndex].toFixed(4)} (索引: ${xMinIndex})<br/>
+        📈 Y最大值: ${yData[yMaxIndex].toFixed(4)} (索引: ${yMaxIndex})<br/>
+        📉 Y最小值: ${yData[yMinIndex].toFixed(4)} (索引: ${yMinIndex})<br/>
+        📏 X变化范围: ${(Math.max(...xData) - Math.min(...xData)).toFixed(4)}<br/>
+        📏 Y变化范围: ${(Math.max(...yData) - Math.min(...yData)).toFixed(4)}
+      `;
+    }
+
+    // 导出分析结果
+    function exportAnalysisResults() {
+      if (!analysisResults.statistics && !analysisResults.correlation && !analysisResults.difference) {
+        document.getElementById('exportResults').innerHTML = '❌ 没有分析结果可导出，请先进行分析';
+        return;
+      }
+
+      let csvContent = 'Analysis Results\n\n';
+      
+      // 基础统计
+      if (analysisResults.statistics) {
+        csvContent += 'Basic Statistics:\n';
+        csvContent += `Data Points,${historyPoints.length}\n`;
+        csvContent += `X Mean,${analysisResults.statistics.xMean}\n`;
+        csvContent += `Y Mean,${analysisResults.statistics.yMean}\n`;
+        csvContent += `X Max,${analysisResults.statistics.xMax}\n`;
+        csvContent += `Y Max,${analysisResults.statistics.yMax}\n`;
+        csvContent += `X Min,${analysisResults.statistics.xMin}\n`;
+        csvContent += `Y Min,${analysisResults.statistics.yMin}\n\n`;
+      }
+      
+      // 相关性
+      if (analysisResults.correlation !== null) {
+        csvContent += `Correlation Coefficient,${analysisResults.correlation}\n\n`;
+      }
+      
+      // 差值分析
+      if (analysisResults.difference) {
+        csvContent += 'Difference Analysis:\n';
+        csvContent += `Max Difference,${analysisResults.difference.maxDiff}\n`;
+        csvContent += `Min Difference,${analysisResults.difference.minDiff}\n`;
+        csvContent += `Average Difference,${analysisResults.difference.avgDiff}\n\n`;
+      }
+
+      // 拟合分析
+      if (analysisResults.regression) {
+        csvContent += 'Regression Analysis:\n';
+        csvContent += `Expression,${analysisResults.regression.expression}\n\n`;
+      }
+
+      downloadCSV(csvContent, 'analysis_results.csv');
+      document.getElementById('exportResults').innerHTML = '✅ 分析结果已导出';
+    }
+
+    // 导出拟合数据
+    function exportFittingData() {
+      if (!regressionData) {
+        document.getElementById('exportResults').innerHTML = '❌ 没有拟合数据，请先进行拟合分析';
+        return;
+      }
+
+      let csvContent = 'Fitting Data\nX,Y,Type\n';
+      
+      // 原始数据
+      historyPoints.forEach(point => {
+        csvContent += `${point[0]},${point[1]},Original\n`;
+      });
+      
+      // 拟合数据
+      regressionData.points.forEach(point => {
+        csvContent += `${point[0]},${point[1]},Fitted\n`;
+      });
+      
+      // 残差数据
+      if (residualsData) {
+        residualsData.forEach(point => {
+          csvContent += `${point[0]},${point[1]},Residual\n`;
+        });
+      }
+
+      downloadCSV(csvContent, 'fitting_data.csv');
+      document.getElementById('exportResults').innerHTML = '✅ 拟合数据已导出';
+    }
+
+    // CSV下载助手函数
+    function downloadCSV(content, filename) {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // WebChannel 初始化
+    let backend, dataSaver;
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+      backend = channel.objects.backend;
+      dataSaver = channel.objects.dataSaver;
+      console.log("✅ Backend ready");
+
+      backend.sendData.connect(function(jsonStr) {
+        const obj = JSON.parse(jsonStr);
+        if (!obj || !Array.isArray(obj.points) || !Array.isArray(obj.time)) return;
+        if (obj.points.length !== obj.time.length) return;
+
+        for (let i = 0; i < obj.points.length; i++) {
+          const [x, y] = obj.points[i];
+          const t = obj.time[i];
+          const point = [x, y, t];
+
+          // 限制最大历史数量为 60000
+          if (historyPoints.length >= 60000) {
+            historyPoints.shift();
+          }
+          historyPoints.push(point);
+        }
+
+        if (obj.points.length > 0) {
+          const last = obj.points.length - 1;
+          const [x, y] = obj.points[last];
+          const t = obj.time[last];
+          currentPoint = [[x, y, t]];
+        }
+
+        chart.setOption({
+          series: [
+            { name: '历史数据点', data: historyPoints },
+            { name: '当前点', data: currentPoint }
+          ]
+        }, false); // 不合并，提高性能
+      });
+    });
+
+    function startPolling() {
+      const xPath = document.getElementById('xPoint').value;
+      const yPath = document.getElementById('yPoint').value;
+      const freqMs = parseInt(document.getElementById('freq').value);
+      console.log("▶ Start polling", xPath, yPath, freqMs);
+
+      if (backend) backend.requestRealtimeScatterXYPolling(xPath, yPath, freqMs);
+    }
+
+    function stopPolling() {
+      console.log("⏹ Stop polling");
+      if (backend) backend.stopRealtimePolling();
+    }
+
+    // 导出CSV功能
+    function sendDataToBackend() {
+      if (historyPoints.length === 0) {
+        alert("⚠️ 当前没有数据可发送！");
+        return;
+      }
+
+      // 将数据转成 JSON 字符串
+      const dataToSend = historyPoints.map(p => ({
+        x: p[0],
+        y: p[1],
+        time: p[2]
+      }));
+
+      if (typeof dataSaver !== 'undefined') {
+        dataSaver.saveScatterToCSV(JSON.stringify(dataToSend));
+      } else {
+        console.warn("dataSaver not defined");
+      }
+    }
+
+  </script>
+</body>
+</html>
