@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>转速-扭矩-功率 多维图（支持降采样）</title>
+  <script src="qrc:/resources/js/echarts.min.js"></script>
+  <script src="qrc:/resources/js/qwebchannel.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #controls {
+      padding: 8px;
+      background: #f0f0f0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    label { font-weight: bold; }
+    input, select, button { padding: 4px; }
+  </style>
+</head>
+<body>
+<div id="controls">
+  <label>X轴:</label>
+  <select id="xPoint"><option value="s1">转速</option></select>
+  <label>Y轴:</label>
+  <select id="yPoint"><option value="s2">扭矩/功率</option></select>
+  <label>频率(ms):</label>
+  <input type="number" id="freq" value="1000" min="100" step="100">
+  <button onclick="startPolling()">▶ 开始</button>
+  <button onclick="stopPolling()">⏹ 停止</button>
+  <label><input type="checkbox" checked onchange="toggleSeries('当前点')"> 当前点</label>
+  <label><input type="checkbox" checked onchange="toggleSeries('历史点')"> 历史点</label>
+  <label><input type="checkbox" checked onchange="toggleSeries('当前功率点')"> 当前功率点</label>
+  <label><input type="checkbox" checked onchange="toggleSeries('油耗曲线')"> 油耗曲线</label>
+  <label><input type="checkbox" checked onchange="toggleSeries('加速度矢量')"> 加速度矢量</label>
+  <button onclick="sendDataToBackend()">⬇ 导出CSV</button>
+</div>
+<div id="main" style="width:100%; height:85vh;"></div>
+<script>
+  const chart = echarts.init(document.getElementById('main'));
+  window.myChart = chart;
+
+  const rawPoints = [];
+  const rawPower = [];
+  const fuelCurve = [];
+  let currentPoint = [], currentPower = [];
+  let accelerationVector = [];
+  
+  // 存储历史数据用于计算加速度
+  const historyForAcceleration = [];
+  const ACCELERATION_HISTORY_LENGTH = 5; // 用于平滑计算的历史点数
+
+  const MAX_POINTS = 3000;
+
+  function downsample(data, max) {
+    if (data.length <= max) return data;
+    const step = Math.ceil(data.length / max);
+    const result = [];
+    for (let i = 0; i < data.length; i += step) {
+      result.push(data[i]);
+    }
+    return result;
+  }
+
+  // 计算加速度矢量
+  function calculateAcceleration(currentRpm, currentTorque, currentTime) {
+    historyForAcceleration.push({
+      rpm: currentRpm,
+      torque: currentTorque,
+      time: currentTime
+    });
+
+    // 保持历史数据长度
+    if (historyForAcceleration.length > ACCELERATION_HISTORY_LENGTH) {
+      historyForAcceleration.shift();
+    }
+
+    if (historyForAcceleration.length < 3) {
+      return null; // 需要至少3个点才能计算加速度
+    }
+
+    const recent = historyForAcceleration.slice(-3);
+    const dt1 = recent[1].time - recent[0].time;
+    const dt2 = recent[2].time - recent[1].time;
+    
+    if (dt1 <= 0 || dt2 <= 0) return null;
+
+    // 计算速度 (变化率)
+    const vRpm1 = (recent[1].rpm - recent[0].rpm) / dt1;
+    const vTorque1 = (recent[1].torque - recent[0].torque) / dt1;
+    const vRpm2 = (recent[2].rpm - recent[1].rpm) / dt2;
+    const vTorque2 = (recent[2].torque - recent[1].torque) / dt2;
+
+    // 计算加速度 (速度的变化率)
+    const avgDt = (dt1 + dt2) / 2;
+    const aRpm = (vRpm2 - vRpm1) / avgDt;
+    const aTorque = (vTorque2 - vTorque1) / avgDt;
+
+    // 缩放因子，使矢量在图表上可见
+    const scaleFactor = 50;
+    
+    return {
+      baseX: currentRpm,
+      baseY: currentTorque,
+      vectorX: aRpm * scaleFactor,
+      vectorY: aTorque * scaleFactor,
+      magnitude: Math.sqrt(aRpm * aRpm + aTorque * aTorque)
+    };
+  }
+
+  const option = {
+    grid: {
+      top: 80,  // 增加顶部空间给时间轴
+      bottom: 50,
+      left: 60,
+      right: 120  // 增加右边空间给多个y轴
+    },
+    title: { text: '转速-扭矩-功率 多维图', left: 'center', top: 10 },
+    tooltip: {
+      trigger: 'item',
+      formatter: function (params) {
+        if (params.seriesName === '加速度矢量') {
+          return `
+            <b>加速度矢量</b><br/>
+            位置: (${params.data.baseX.toFixed(1)}, ${params.data.baseY.toFixed(1)})<br/>
+            加速度大小: ${params.data.magnitude.toFixed(3)}
+          `;
+        }
+        
+        const [x, y, t] = params.data;
+        let axisLabel;
+
+        if (params.seriesName.includes('功率')) {
+          axisLabel = '功率 (%)';
+        } else if (params.seriesName.includes('油耗')) {
+          axisLabel = '油耗 (g/kWh)';
+        } else {
+          axisLabel = '扭矩 (%)';
+        }
+
+        return `
+          <b>${params.seriesName}</b><br/>
+          转速: ${x}<br/>
+          ${axisLabel}: ${y}<br/>
+          时间: ${t}
+        `;
+      }
+    },
+    toolbox: {
+      feature: {
+        dataZoom: {}, restore: {}, dataView: {}, saveAsImage: {}
+      }
+    },
+    dataZoom: [
+      { type: 'inside', xAxisIndex: [0] },
+      { type: 'inside', yAxisIndex: [0, 1, 2] },
+      { type: 'slider', xAxisIndex: [0] },
+      { type: 'slider', yAxisIndex: [0, 1, 2] }
+    ],
+    xAxis: {
+      name: '转速 (rpm)',
+      type: 'value',
+      position: 'bottom',
+      axisLine: {
+        show: true,
+        lineStyle: {
+          color: '#333'
+        }
+      }
+    },
+    yAxis: [
+      {
+        name: '扭矩 (%)',
+        type: 'value',
+        position: 'left',
+        axisLine: {
+          show: true,
+          lineStyle: { color: '#1f77b4' }
+        },
+        nameTextStyle: { color: '#1f77b4' }
+      },
+      {
+        name: '功率 (%)',
+        type: 'value',
+        position: 'right',
+        axisLine: {
+          show: true,
+          lineStyle: { color: '#ff7f0e' }
+        },
+        nameTextStyle: { color: '#ff7f0e' }
+      },
+      {
+        name: '油耗 (g/kWh)',
+        type: 'value',
+        position: 'right',
+        offset: 60,
+        axisLine: {
+          show: true,
+          lineStyle: { color: '#2ca02c' }
+        },
+        nameTextStyle: { color: '#2ca02c' }
+      }
+    ],
+    series: [
+      {
+        name: '历史点',
+        type: 'scatter',
+        yAxisIndex: 0,
+        data: [],
+        symbolSize: 6,
+        itemStyle: { color: 'blue', opacity: 0.3 },
+        z: 1
+      },
+      {
+        name: '当前点',
+        type: 'scatter',
+        yAxisIndex: 0,
+        data: [],
+        symbolSize: 10,
+        itemStyle: { color: 'red' },
+        z: 2
+      },
+      {
+        name: '当前功率点',
+        type: 'scatter',
+        yAxisIndex: 1,
+        data: [],
+        symbolSize: 10,
+        symbol: 'triangle',
+        itemStyle: { color: 'orange' },
+        z: 2
+      },
+      {
+        name: '油耗曲线',
+        type: 'line',
+        yAxisIndex: 2,
+        data: [],
+        itemStyle: { color: 'green' },
+        lineStyle: { color: 'green' },
+        smooth: true,
+        z: 0,
+        // 将油耗曲线的x轴数据映射到时间范围对应的转速范围
+        encode: {
+          x: 'time_mapped_to_rpm',
+          y: 'fuel'
+        }
+      },
+      {
+        name: '加速度矢量',
+        type: 'custom',
+        data: [],
+        z: 3,
+        renderItem: function (params, api) {
+          const data = api.value();
+          if (!data.baseX || !data.baseY) return null;
+          
+          const startPoint = api.coord([data.baseX, data.baseY]);
+          const endPoint = api.coord([data.baseX + data.vectorX, data.baseY + data.vectorY]);
+          
+          if (!startPoint || !endPoint) return null;
+          
+          const dx = endPoint[0] - startPoint[0];
+          const dy = endPoint[1] - startPoint[1];
+          const length = Math.sqrt(dx * dx + dy * dy);
+          
+          if (length < 5) return null; // 太小的矢量不显示
+          
+          const angle = Math.atan2(dy, dx);
+          const arrowLength = Math.min(length * 0.3, 15);
+          
+          return {
+            type: 'group',
+            children: [
+              {
+                type: 'line',
+                shape: {
+                  x1: startPoint[0],
+                  y1: startPoint[1],
+                  x2: endPoint[0],
+                  y2: endPoint[1]
+                },
+                style: {
+                  stroke: '#ff4444',
+                  lineWidth: 2
+                }
+              },
+              {
+                type: 'polygon',
+                shape: {
+                  points: [
+                    [endPoint[0], endPoint[1]],
+                    [
+                      endPoint[0] - arrowLength * Math.cos(angle - 0.3),
+                      endPoint[1] - arrowLength * Math.sin(angle - 0.3)
+                    ],
+                    [
+                      endPoint[0] - arrowLength * Math.cos(angle + 0.3),
+                      endPoint[1] - arrowLength * Math.sin(angle + 0.3)
+                    ]
+                  ]
+                },
+                style: {
+                  fill: '#ff4444'
+                }
+              }
+            ]
+          };
+        }
+      }
+    ]
+  };
+
+  chart.setOption(option);
+
+  function toggleSeries(name) {
+    const opt = chart.getOption();
+    for (let s of opt.series) {
+      if (s.name === name) s.show = !s.show;
+    }
+    chart.setOption(opt);
+  }
+
+  let backend, dataSaver;
+  new QWebChannel(qt.webChannelTransport, function(channel) {
+    backend = channel.objects.backend;
+    dataSaver = channel.objects.dataSaver;
+
+    backend.sendData.connect(function(jsonStr) {
+      const obj = JSON.parse(jsonStr);
+      if (!obj || !Array.isArray(obj.time) || !Array.isArray(obj.series)) return;
+
+      const timeArr = obj.time;
+      const seriesMap = {}; // { name: values[] }
+
+      for (const s of obj.series) {
+        if (s.name && Array.isArray(s.values)) {
+          seriesMap[s.name] = s.values;
+        }
+      }
+
+      const s1Arr = seriesMap["root.testdb.d1.s1"] || [];
+      const s2Arr = seriesMap["root.testdb.d1.s2"] || [];
+      const s3Arr = seriesMap["root.testdb.d1.s3"] || [];
+
+      const len = Math.min(timeArr.length, s1Arr.length, s2Arr.length, s3Arr.length);
+      if (len === 0) return;
+
+      // 获取当前转速范围用于时间轴映射
+      let minTime = Infinity, maxTime = -Infinity;
+      let minRpm = Infinity, maxRpm = -Infinity;
+      
+      for (let i = 0; i < len; i++) {
+        const t = timeArr[i];
+        const rpm = s1Arr[i];
+        
+        minTime = Math.min(minTime, t);
+        maxTime = Math.max(maxTime, t);
+        minRpm = Math.min(minRpm, rpm);
+        maxRpm = Math.max(maxRpm, rpm);
+      }
+
+      for (let i = 0; i < len; i++) {
+        const t = timeArr[i];
+        const rpm = s1Arr[i];
+        const torque = s2Arr[i];
+        const fuel = s3Arr[i] / 100;
+        const power = rpm * (250 * torque / 100) / 9550;
+
+        rawPoints.push([rpm, torque, t]);
+        rawPower.push([rpm, power, t]);
+        
+        // 将时间映射到转速范围，这样油耗曲线就能正确显示在主图上
+        const timeRange = maxTime - minTime;
+        const rpmRange = maxRpm - minRpm;
+        let mappedRpm;
+        
+        if (timeRange > 0 && rpmRange > 0) {
+          const timeRatio = (t - minTime) / timeRange;
+          mappedRpm = minRpm + timeRatio * rpmRange;
+        } else {
+          mappedRpm = rpm; // fallback
+        }
+        
+        fuelCurve.push([mappedRpm, fuel, t]);
+      }
+
+      // 更新最新点
+      const lastIdx = len - 1;
+      if (lastIdx >= 0) {
+        const rpm = s1Arr[lastIdx];
+        const torque = s2Arr[lastIdx];
+        const power = rpm * (250 * torque / 100) / 9550;
+        const t = timeArr[lastIdx];
+        currentPoint = [[rpm, torque, t]];
+        currentPower = [[rpm, power, t]];
+        
+        // 计算加速度矢量
+        const acceleration = calculateAcceleration(rpm, torque, t);
+        if (acceleration) {
+          accelerationVector = [acceleration];
+        }
+      }
+
+      updateChartView();
+    });
+  });
+
+  chart.on('dataZoom', updateChartView);
+
+  function updateChartView() {
+    const xAxis = chart.getModel().getComponent('xAxis').axis;
+    const [minX, maxX] = xAxis.scale._extent;
+    const visiblePoints = rawPoints.filter(p => p[0] >= minX && p[0] <= maxX);
+    const visiblePower = rawPower.filter(p => p[0] >= minX && p[0] <= maxX);
+    const visibleFuel = fuelCurve.filter(p => p[0] >= minX && p[0] <= maxX);
+
+    chart.setOption({
+      series: [
+        { name: '历史点', data: downsample(visiblePoints, MAX_POINTS) },
+        { name: '当前点', data: currentPoint },
+        { name: '当前功率点', data: currentPower },
+        { name: '油耗曲线', data: downsample(visibleFuel, MAX_POINTS) },
+        { name: '加速度矢量', data: accelerationVector }
+      ]
+    });
+  }
+
+  function startPolling() {
+    const pointPaths = [
+      "root.testdb.d1.s1",
+      "root.testdb.d1.s2",
+      "root.testdb.d1.s3"
+    ];
+    const freqMs = parseInt(document.getElementById('freq').value);
+    if (backend) backend.requestRealtimeMultiPointsPolling(pointPaths, freqMs);
+  }
+
+  function stopPolling() {
+    if (backend) backend.stopRealtimePolling();
+  }
+
+  function sendDataToBackend() {
+    if (rawPoints.length === 0) {
+      alert("⚠️ 当前没有数据可发送！");
+      return;
+    }
+    const dataToSend = rawPoints.map(p => ({ x: p[0], y: p[1], time: p[2] }));
+    if (typeof dataSaver !== 'undefined') {
+      dataSaver.saveScatterToCSV(JSON.stringify(dataToSend));
+    }
+  }
+</script>
+</body>
+</html>
